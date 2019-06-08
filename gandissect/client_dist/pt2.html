@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ganter Selectorama</title>
+
+    <!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600&amp;subset=cyrillic,cyrillic-ext,greek,greek-ext,latin-ext,vietnamese"-->
+    <!--rel="stylesheet">-->
+
+    <link rel="stylesheet" type="text/css" href="vendor.css">
+    <link rel="stylesheet" type="text/css" href="pt2.css">
+</head>
+<body>
+
+<div class="navbar">
+    <div class="navbarContent">
+        <span class="navbarTitle"> Ganter S2</span>
+        <span>project:</span>
+        <select class="custom-select" id="project_selector">
+            <option selected>Select Project</option>
+            <!--<option value="1">One</option>-->
+            <!--<option value="2">Two</option>-->
+            <!--<option value="3">Three</option>-->
+        </select>
+        <span>layer:</span>
+        <select class="custom-select" id="layer_selector">
+            <!--<option value="0">0</option>-->
+            <option value="layer1">1</option>
+            <option selected value="layer2">2</option>
+            <option value="layer3">3</option>
+            <option value="layer6">6</option>
+            <option value="layer9">9</option>
+        </select>
+        <span>start samples:</span>
+        <input id='minEx' type="number" value="10">
+        <span>no. of samples:</span>
+        <input id='noEx' type="number" value="50">
+        <span>ablate first:</span>
+        <input id='noAb' type="number" value="20">
+
+
+    </div>
+</div>
+
+
+<div class="main_frame" style="top:50px;left:0">
+    <div class="floating_content">
+        <div class="ablation_modifier"></div>
+        <div class="ablation_examples" style="margin-top: 10px;">
+
+
+        </div>
+
+        <button id="reset_mask_btn" style="display: block;">reset mask</button>
+        <div id="paint_image"
+             style="position: relative; display: inline-block;">
+
+        </div>
+        <div id="compare_img" style="display: inline-block;">
+
+        </div>
+
+        <button id="unitAbBtn" style="display: block;">generate unit ablations</button>
+        <div id="unitAb">
+
+        </div>
+
+
+        <button id="unitSingleAbBtn">single ablation per unit</button>
+        <input id="unitSingleAbNgram" type="number" value="1" min="1">
+        <div id="unitSingleAb">
+
+        </div>
+
+
+
+
+
+    </div>
+
+</div>
+
+
+<div class="sidenav">
+
+
+    <div style="padding-top: 10px;">Recipes:</div>
+    <select class="recipes" style="margin-top: 5px;">
+        <option value="abc">abc</option>
+
+    </select>
+    <button class="apply_rec_btn" style="opacity: 0;pointer-events: none;">
+        apply
+    </button>
+
+    <div style="padding-top: 10px;">Recipes:</div>
+    <div>
+        <button id="reset_all"> all orig</button>
+    </div>
+    <div class="detail_img">
+
+    </div>
+    <div id="units">
+
+    </div>
+
+</div>
+
+
+<script src="vendor.js"></script>
+<script src="pt2.js"></script>
+
+</body>
+</html>

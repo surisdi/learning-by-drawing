@@ -1,0 +1,11 @@
+name: experiment_video_example
+file: main
+args:
+    experiment: True
+    experiment_name: videos
+    model: Davenet
+    name_dataset: audio_clevrgan_natural
+    folder_dataset: ./data/
+    name_checkpoint: train_example
+    seed: EXPDIR
+    results: ./results/

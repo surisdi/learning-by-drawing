@@ -1,0 +1,9 @@
+name: evaluate_example
+file: main
+args:
+    evaluate: True
+    model: Davenet
+    name_dataset: audio_clevrgan_natural
+    folder_dataset: ./data/
+    name_checkpoint: train_example
+    seed: EXPDIR  # loads the best model with the name in "name_checkpoint", in the folder "expdir"

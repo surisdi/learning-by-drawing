@@ -1,0 +1,19 @@
+name: train_example
+file: main
+args:
+    model: Davenet
+    name_dataset: audio_clevrgan_natural
+    folder_dataset: ./data/
+    batch_size: 8
+    workers: 30
+    lrdecay: 30
+    epochs: 180
+    embedding_dim: 512
+    lr: 0.001
+    name_checkpoint: train_example
+    # seed: '/path/to/dir/results/checkpoints/model_best_train_example.pth.tar'
+    loss_type: negatives_edited
+    audio_model: large
+    clustering: True
+    epochs_clustering: 10
+    layers: ['layer4']

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ganter</title>
+
+    <!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600&amp;subset=cyrillic,cyrillic-ext,greek,greek-ext,latin-ext,vietnamese"-->
+    <!--rel="stylesheet">-->
+
+    <link rel="stylesheet" type="text/css" href="vendor.css">
+    <link rel="stylesheet" type="text/css" href="pt1.css">
+</head>
+<body>
+
+<div class="navbar">
+    <div class="navbarContent">
+        <span class="navbarTitle"> GANter</span>
+        <span>project:</span>
+        <select class="custom-select" id="project_selector">
+            <option selected>Select Project</option>
+            <!--<option value="1">One</option>-->
+            <!--<option value="2">Two</option>-->
+            <!--<option value="3">Three</option>-->
+        </select>
+        <span>layer:</span>
+        <select class="custom-select" id="layer_selector">
+            <option value="0">0</option>
+            <option value="layer1">1</option>
+            <option selected value="layer2">2</option>
+            <option value="layer3">3</option>
+        </select>
+
+    </div>
+</div>
+
+
+<div class="main_frame" style="top:50px;left:0">
+    <div class="floating_content">
+        <div class="ablation_modifier"></div>
+
+        <button id="apply_recipe_btn"> apply recipe</button>
+        <span id="apply_recipe_spinner" style="padding-left: 10px; opacity: 0">[requesting]....</span>
+
+        <div class="ablation_examples" style="margin-top: 10px;">
+
+
+        </div>
+
+
+        <div id="bars" style="position: relative;">
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<div class="sidenav">
+
+
+    <div style="padding-top: 10px;">Recipes:</div>
+    <select class="recipes" style="margin-top: 5px;">
+        <option value="abc">abc</option>
+
+    </select>
+    <button class="select_rec_btn" style="opacity: 0;pointer-events: none;">
+        select
+    </button>
+
+    <div style="padding-top: 10px;">Recipes:</div>
+    <div>
+        <button id="reset_all"> all orig</button>
+    </div>
+        <div class="detail_img">
+
+    </div>
+
+</div>
+
+
+<script src="vendor.js"></script>
+<script src="pt1.js"></script>
+
+</body>
+</html>
