@@ -67,7 +67,7 @@ class Trainer:
                                             args.name_checkpoint + '_' + str(time.time()))
                 self.clusterer = Clusterer(self.loaders['train'], model, path_store=cluster_path,
                                            model_dim=args.embedding_dim, save_results=True, output_size=output_size,
-                                           args=self.args)
+                                           args=self.args, path_cluster_load=args.path_cluster_load)
 
         self.epochs_clustering = self.args.epochs_clustering
         self.clusters = self.mean_clust = self.std_clust = self.cluster_counts = self.clusters_unit = None
@@ -101,7 +101,8 @@ class Trainer:
 
                     # This is for visualization:
                     # self.clusterer.segment_images()
-                    # self.clusterer.create_web_images()
+                    # self.clusterer.create_web_images()  # segment_images has to be uncommented before
+                    self.clusterer.create_web_clusters(with_images=True)
 
                 utils.adjust_learning_rate(self.args, self.optimizer, epoch)
 

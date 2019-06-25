@@ -28,7 +28,7 @@ class ClusterSegmenter(netdissect.segmenter.BaseSegmenter):
     def get_label_and_category_names(self):
         return [('c_%d' % (i + 1), 'cluster') for i in range(len(self.clusters) + 1)], ['cluster']
 
-    def segment_batch(self, tensor_images, downsample=1):
+    def segment_batch(self, tensor_images, downsample=1, upsample=True):
         '''
         Returns a multilabel segmentation for the given batch of (RGB [-1...1])
         images.  Each pixel of the result is a torch.long indicating a
@@ -36,8 +36,8 @@ class ClusterSegmenter(netdissect.segmenter.BaseSegmenter):
         the same pixel: output shape is (n, multipred, y, x), where
         multipred is 3, 5, or 6, for how many different predicted labels can
         be given for each pixel (depending on whether subdivision is being
-        used).  If downsample is specified, then the output y and x dimensions
-        are downsampled from the original image.
+        used).  If upsample is specified, then the output y and x dimensions
+        are upsampled to the original image.
         '''
         output_images, _, _ = self.model(tensor_images, None, [])  # N x 512 x W x H
         output_seg = []
@@ -57,7 +57,8 @@ class ClusterSegmenter(netdissect.segmenter.BaseSegmenter):
 
             matchmap = matchmap.permute(2, 0, 1)  # N_c x H x W
 
-            matchmap = torch.nn.functional.interpolate(matchmap[None, :, :, :], size=(64, 64), mode='bilinear')[0]
+            if upsample:
+                matchmap = torch.nn.functional.interpolate(matchmap[None, :, :, :], size=(64, 64), mode='bilinear')[0]
 
             matchmap = nn.Threshold(self.threshold, 0)(matchmap)
             matchmap = -nn.Threshold(-0.1, -1)(-matchmap)

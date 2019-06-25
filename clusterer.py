@@ -20,12 +20,13 @@ import matplotlib.pyplot as plt
 
 import utils
 from ablate import gantest
+from segmenter import ClusterSegmenter
 
 
 class Clusterer():
     def __init__(self, dataloader, model, path_store, model_dim=512, max_datapoints=10000, num_clusters=250,
                  num_images_segment=10, save_results=False, load_datapoints=False, load_clustering=False,
-                 load_name_final=False, load_histogram=False, output_size=256, args=None):
+                 load_name_final=False, load_histogram=False, output_size=256, args=None, path_cluster_load=''):
         """
         Clusterer class
         :param dataloader: dataloader
@@ -39,9 +40,10 @@ class Clusterer():
         :param load_datapoints: boolean. load datapoints instead of computing them
         :param load_clustering: boolean. load clusters instead of computing them
         :param load_name_final: boolean. load cluster representatives instead of computing them
+        :param path_cluster_load: path where cluster information is stored. If not '', load all information
         """
         self.output_size = output_size
-        self.path_store = path_store
+        self.path_store = path_store if path_cluster_load is '' else path_cluster_load
         self.max_datapoints = max_datapoints
         self.num_clusters = num_clusters
         self.args = args
@@ -61,6 +63,8 @@ class Clusterer():
 
         self.load = {'datapoints': load_datapoints, 'clustering': load_clustering, 'name_final': load_name_final,
                      'histogram': load_histogram}
+        if path_cluster_load is not '':
+            self.load = {'datapoints': True, 'clustering': True, 'name_final': True, 'histogram': True}
         self.num_images_segment = num_images_segment
         self.save_results = save_results
         if save_results:
@@ -127,7 +131,7 @@ class Clusterer():
 
         print('Clustering')
         if not self.load['clustering']:
-            self.cluster_datapoints(self.indexes)
+            self.cluster_datapoints()
             if self.save_results:
                 torch.save(self.centroids, os.path.join(self.path_store, f'centroids_{iteration}.pth.tar'))
                 torch.save(self.mean_centroids, os.path.join(self.path_store, f'mean_{iteration}.pth.tar'))
@@ -293,59 +297,31 @@ class Clusterer():
 
         return np.array(n_total), bins_total
 
-    def cluster_datapoints(self, indexes):
+    def cluster_datapoints(self):
         """
         Create clusters from data points
         :return: return centroids
         """
-        # We cluster using the datapoints from the two modalities
-        datapoints = np.concatenate([self.datapoints_image, self.datapoints_audio])
+        # We can cluster using the datapoints from the two modalities concatenated, or can use the element-wise product.
+        # For the paper we use the second option. We can also cluster only using features from one modality
+        # datapoints = np.concatenate([self.datapoints_image, self.datapoints_audio])
+        datapoints = self.datapoints_mul  # element-wise (hadamard) product
 
-        names_list = ['image', 'audio', 'product']
+        threshold = 0.99
 
-        Html_file = open(os.path.join(self.path_store, 'visualize_clusters.html'), "w")
-        Html_file.write('<table>')
-        threshold_list = [0.9, 0.95, 0.99]
-        Html_file.write('<tr>')
-        Html_file.write('<td>Threshold</td>')
-        Html_file.write('<td>Image Correlation</td>')
-        Html_file.write('<td>Audio Correlation</td>')
-        Html_file.write('<td>Product Correlation</td>')
-        Html_file.write('</tr>')
+        activation_units = np.quantile(datapoints, threshold, axis=0) + 1e-7  # Select units that get activated
+        activation_units = activation_units.reshape((-1, datapoints.shape[1]))
+        activation_units = np.repeat(activation_units, datapoints.shape[0], axis=0)
+        dat = datapoints > activation_units
+        dat = dat.astype(float)
+        counts_units = dat.sum(axis=0)
+        counts_i = counts_units.reshape((-1, datapoints.shape[1])).repeat(datapoints.shape[1], axis=0)
+        counts_j = counts_units.reshape((datapoints.shape[1], -1)).repeat(datapoints.shape[1], axis=1)
+        count_ij = np.matmul(dat.transpose(), dat)
+        corr = count_ij / (counts_i + counts_j - count_ij + 1e-10)
 
-        for th in threshold_list:
-            for i, ds in enumerate([self.datapoints_image, self.datapoints_audio, self.datapoints_mul]):
-                activation_units = np.quantile(ds, th, axis=0) + 1e-7
-                activation_units = activation_units.reshape((-1, ds.shape[1]))
-                activation_units = np.repeat(activation_units, ds.shape[0], axis=0)
-                dat = ds > activation_units
-                dat = dat.astype(float)
-                counts_units = dat.sum(axis=0)
-                counts_i = counts_units.reshape((-1, ds.shape[1])).repeat(ds.shape[1], axis=0)
-                counts_j = counts_units.reshape((ds.shape[1], -1)).repeat(ds.shape[1], axis=1)
-                count_ij = np.matmul(dat.transpose(), dat)
-                corr = (count_ij) / (counts_i + counts_j - count_ij + 1e-10)
-
-                for j in range(corr.shape[0]): corr[j, j] = 0
-
-                path_corr = os.path.join(self.path_store, 'correlation_{0}_{1}.jpg'.format(names_list[i], str(th)))
-                corr_viz = corr
-                svd = np.linalg.svd(corr_viz)
-                v = abs(svd[2][0, :])
-                idx = np.argsort(-v)
-                corr_viz = corr_viz[idx, :]
-                corr_viz = corr_viz[:, idx]
-                mask_im = corr_viz * 255
-                mask_im = mask_im.astype(np.uint8)
-                mask_im = cv2.applyColorMap(mask_im, cv2.COLORMAP_JET)
-                cv2.imwrite(path_corr, mask_im)
-            Html_file.write('<tr>')
-            Html_file.write('<td>' + str(th) + '</td>')
-            Html_file.write('<td><img src="' + os.path.join('correlation_image_{0}.jpg'.format(str(th))) + '"</td>')
-            Html_file.write('<td><img src="' + os.path.join('correlation_audio_{0}.jpg'.format(str(th))) + '"</td>')
-            Html_file.write('<td><img src="' + os.path.join('correlation_product_{0}.jpg'.format(str(th))) + '"</td>')
-        Html_file.write('</tr>')
-        Html_file.write('</table>')
+        for j in range(corr.shape[0]):
+            corr[j, j] = 0
 
         # Calculate distance first
         distance_matrix = 1 - corr
@@ -359,14 +335,16 @@ class Clusterer():
 
         centroids = np.zeros((self.num_clusters, datapoints.shape[1]))
 
-        for i in range(self.num_clusters): centroids[i] = (classification == i).astype(float)
+        for i in range(self.num_clusters):
+            centroids[i] = (classification == i).astype(float)
         ids_mul = centroids.sum(1) > 3
         centroids = centroids[ids_mul, :]
         self.num_clusters = ids_mul.astype(int).sum()
 
         max_units = centroids.sum(1)
 
-        for i in range(self.num_clusters): centroids[i] = centroids[i] / max_units[i]
+        for i in range(self.num_clusters):
+            centroids[i] = centroids[i] / max_units[i]
 
         self.centroids = centroids
         return centroids
@@ -438,8 +416,11 @@ class Clusterer():
             audio_output = torch.FloatTensor(self.centroids).cuda()
             audio_output = audio_output.transpose(1, 0).view(self.centroids.shape[1], 1, self.centroids.shape[0])
 
+            base_segmenter = ClusterSegmenter(self.model, torch.tensor(self.centroids).float().cuda(),
+                                              self.mean_centroids, self.var_centroids)
+
             with torch.no_grad():
-                for c in range(self.num_clusters):
+                for c in range(len(self.centroids)):  # the final number of clusters can < than self.num_clusters
                     dict_c = {}
                     max_images_indexes = np.argsort(-values[c])
                     for i in range(num_images_per_cluster):
@@ -463,14 +444,24 @@ class Clusterer():
 
                         model_output = self.model(image_input, None, [])
                         image_output = model_output[0]
-                        mask = utils.compute_matchmap(image_output[0], audio_output).cpu().numpy()[:, :, c]
-                        th = 0.64
-                        binary_mask = mask > mask.max() * th
-                        per = binary_mask.astype(float).sum() / 64.0
-                        while per < 0.2:
-                            binary_mask = mask > mask.max() * th
-                            per = binary_mask.astype(float).sum() / 64.0
-                            th = th - 0.02
+
+                        # If we create the map with the implicit segmentation of the cluster
+                        aux = base_segmenter.threshold
+                        base_segmenter.threshold = 1
+                        segmentation_map = base_segmenter.segment_batch(image_input, upsample=False)
+                        base_segmenter.threshold = aux
+                        seg_mask = segmentation_map[0, c, :, :] > 0
+                        binary_mask = seg_mask.cpu().numpy()
+
+                        # If we create the mask thresholding on the matchmap
+                        # mask = utils.compute_matchmap(image_output[0], audio_output).cpu().numpy()[:, :, c]
+                        # th = 0.64
+                        # binary_mask = mask > mask.max() * th
+                        # per = binary_mask.astype(float).sum() / 64.0
+                        # while per < 0.2:
+                        #     binary_mask = mask > mask.max() * th
+                        #     per = binary_mask.astype(float).sum() / 64.0
+                        #     th = th - 0.02
 
                         dict_c[path] = binary_mask
 
@@ -533,7 +524,7 @@ class Clusterer():
             # Compute matchmap to detect where there are important concepts that we want to cluster (this time in image)
             for i in range(image_input.shape[0]):
                 nF = nframes[i]
-                matchmap_i = utils.compute_matchmap_mul_audio(image_output[i], audio_output[i][:, :, 0:nF])
+                matchmap_i = utils.compute_matchmap(image_output[i], audio_output[i][:, :, 0:nF])
                 matchmap_i_mean = matchmap_i.mean(2).view(-1)
                 indexes = np.where(matchmap_i_mean > 0.9 * matchmap_i_mean.max())[0]
                 features_im = image_output[i].view(image_output.shape[1], -1)[..., indexes].cpu().numpy()
@@ -578,12 +569,13 @@ class Clusterer():
             for k, binary_mask in images_cluster.items():
                 path = k
                 image = self.dataloader.dataset.load_image_raw(path)
-                struct_element = [[True]] * 1  # 6  # 10 in a total scale of matchmap_l (128)
-                binary_mask = morph.binary_dilation(binary_mask, struct_element)  # Temporal smoothing
+                struct_element = [[True]] * 1  # modify number for smoothing
+                binary_mask = morph.binary_dilation(binary_mask, struct_element)  # smoothing
                 mask_resize = np.array([cv2.resize(binary_mask.astype(float),
                                                    (image.shape[1], image.shape[0]))] * 3).transpose(1, 2, 0)
-                im_final = np.multiply(image, mask_resize)
+                im_final = image*mask_resize  # 0.3*image + 0.7*(image*mask_resize)
                 final_images.append(im_final)
+                final_images.append(255 + (im_final[:, 0:20, :] * 0))
             image_join_ = np.concatenate(final_images, 1)
             return image_join_
 
@@ -611,11 +603,12 @@ class Clusterer():
             if with_images:
                 image_join = create_images(self.names_images, i)
                 path_image = os.path.join(self.path_store, f'image', 'cluster%03d.jpg' % i)
-                path_image_simple = os.path.join(f'image', 'cluster%03d.jpg' % i)
+                path_image_simple = os.path.join(f'image', 'cluster%03d.png' % i)
 
                 image_join = cv2.cvtColor(image_join.astype(np.uint8), cv2.COLOR_RGB2BGR)
                 cv2.imwrite(path_image, image_join)
-                html = html + f'<img src="{path_image_simple}" width="20000" height="200">'
+                num_images = image_join.shape[1]/image_join.shape[0]
+                html = html + f'<img src="{path_image_simple}" width="{int(num_images*(128+20))}" height="128">'
             html = html + '<hr>'
 
         with open(file_html + '.html', 'w') as f:
@@ -675,10 +668,10 @@ class Clusterer():
             html = html + f'<embed src="{path_text_simple}" width="700" height="200">'
 
             # Audio part
-            path_audioim = os.path.join(self.path_store, f'audioim', f'{path}.mp3')
-            path_audioim_simple = os.path.join(f'audioim', f'{path}.mp3')
+            path_audioim = os.path.join(self.path_store, f'audioim', f'{path}.wav')
+            path_audioim_simple = os.path.join(f'audioim', f'{path}.wav')
 
-            copyfile(os.path.join(self.dataloader.dataset.path_dataset, 'audio', f'{path}.mp3'), path_audioim)
+            copyfile(os.path.join(self.dataloader.dataset.path_dataset, 'audio', f'{path}.wav'), path_audioim)
 
             path_text_audioim = os.path.join(self.path_store,
                                              f'text_audioim', f'{path}.txt')

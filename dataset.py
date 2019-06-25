@@ -140,6 +140,19 @@ class ImageAudioDataset(data.Dataset):
 
         return one_hots, nframes
 
+    def load_text_raw(self, index=-1, path=''):
+        if index is not -1:
+            p = self.path_dataset + '/text/' + self.paths[index] + '.txt'
+        elif path is not '':
+            p = self.path_dataset + '/text/' + path + '.txt'
+        else:
+            raise Exception('Please provide either the index or the path')
+
+        with open(p, 'r') as f:
+            text = f.read()
+
+        return text
+
     def load_mel_spectrogram(self, path, path_audio='', verbose=True):
         preemph_coef = 0.97
         sample_rate = 16000

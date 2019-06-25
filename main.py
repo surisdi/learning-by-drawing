@@ -62,6 +62,8 @@ def get_args():
                         help='path to directory of segmenter checkpoint. If file does not exist, it will be downloaded')
     parser.add_argument('--path_negatives_test', default='./downloaded_files/', type=str,
                         help='path to the "negatives.pth" file where hard semantic negatives are stored for the test')
+    parser.add_argument('--path_cluster_load', default='', type=str,
+                        help='path where clustering checkpoints are stored')
     # Other
     parser.add_argument('--epochs_clustering', default=15, type=int, help='cluster every "epochs_clustering" epochs')
     parser.add_argument('-j', '--workers', default=12, type=int, help='number of data loading workers (default: 12)')
@@ -83,7 +85,8 @@ def get_args():
                         help='full path to data used to get active learning samples. Its format when generated is '
                              '{args.active_learning_path}/{self.args.name_checkpoint}_{str(time.time())}')
     parser.add_argument('--active_learning_path', default='./active_learning/', type=str,
-                        help='path to save active learning created samples and associated information')
+                        help='path to save active learning created samples and associated information. If used, the '
+                             'path_cluster_load is not used')
 
     args = parser.parse_args()
 
@@ -117,7 +120,7 @@ def main(options=None):
                                               random_sampling=True, transform=transform,
                                               loading_image=args.loading_image)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                                               num_workers=args.workers, pin_memory=True, sampler=None)
+                                               num_workers=args.workers, pin_memory=True,  sampler=None)
 
     val_dataset = dataset.ImageAudioDataset(args.folder_dataset + args.name_dataset, split='val', transform=transform,
                                             loading_image=args.loading_image)
