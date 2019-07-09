@@ -62,6 +62,9 @@ def get_args():
                         help='path to directory of segmenter checkpoint. If file does not exist, it will be downloaded')
     parser.add_argument('--path_negatives_test', default='./downloaded_files/', type=str,
                         help='path to the "negatives.pth" file where hard semantic negatives are stored for the test')
+    parser.add_argument('--path_repeated_attributes', default='./downloaded_files/', type=str,
+                        help='path to the "repeated_attributes" audio, for the "repeated_attribute" experiment. If '
+                             'files do not exist, they will be downloaded')
     parser.add_argument('--path_cluster_load', default='', type=str,
                         help='path where clustering checkpoints are stored')
     # Other
@@ -139,7 +142,7 @@ def main(options=None):
     model = model_class(args)
     model = torch.nn.DataParallel(model).cuda()
     # Print model information
-    utils.print_model_report(model)
+    # utils.print_model_report(model)
 
     optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
