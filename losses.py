@@ -225,20 +225,19 @@ def combined_random_hard_negative_loss(image_outputs, audio_outputs, negatives_o
             utils.compute_matchmap(image_outputs[I_imp_ind], audio_outputs[i][:, :, 0:nF], symfun))
         Aimpsim = utils.matchmap_sim(
             utils.compute_matchmap(image_outputs[i], audio_outputs[A_imp_ind][:, :, 0:nFimp], symfun))
-        A2I_simdif = margin + Iimpsim - anchorsim
+        A2I_simdif = margin + Aimpsim - anchorsim
 
         anchorsim_neg = utils.matchmap_sim(
             utils.compute_matchmap(image_outputs[i], audio_outputs[i][:, :, 0:nF], symfun))
-        Aimpsim_neg = utils.matchmap_sim(
+        Iimpsim_neg = utils.matchmap_sim(
             utils.compute_matchmap(negatives_output[i], audio_outputs[i][:, :, 0:nF], symfun))
-        I2A_simdif_neg = margin + Aimpsim_neg - anchorsim_neg
+        I2A_simdif_neg = margin + Iimpsim_neg - anchorsim_neg
 
         if (A2I_simdif.data > 0).all():
             loss = loss + A2I_simdif
 
-        I2A_simdif = margin + Aimpsim - anchorsim
-
-        if (I2A_simdif.data > 0).all():
+        I2A_simdif = margin + Iimpsim - anchorsim
+        if (torch.max(I2A_simdif.data,I2A_simdif_neg.data) > 0).all():
             loss = loss + torch.max(I2A_simdif, I2A_simdif_neg)
 
     loss = loss / n
@@ -276,16 +275,16 @@ def combined_random_sampled_margin_rank_loss(image_outputs, audio_outputs, negat
 
         anchorsim_neg = utils.matchmap_sim(
             utils.compute_matchmap(image_outputs[i], audio_outputs[i][:, :, 0:nF], symfun))
-        Aimpsim_neg = utils.matchmap_sim(
+        Iimpsim_neg = utils.matchmap_sim(
             utils.compute_matchmap(negatives_output[i], audio_outputs[i][:, :, 0:nF], symfun))
-        I2A_simdif_neg = margin + Aimpsim_neg - anchorsim_neg
+        I2A_simdif_neg = margin + Iimpsim_neg - anchorsim_neg
 
-        A2I_simdif = margin + Iimpsim - anchorsim
+        A2I_simdif = margin + Aimpsim - anchorsim
         if (A2I_simdif.data > 0).all():
             loss = loss + A2I_simdif
 
-        I2A_simdif = margin + Aimpsim - anchorsim
-        if (I2A_simdif.data > 0).all():
+        I2A_simdif = margin + Iimpsim - anchorsim
+        if (torch.max(I2A_simdif.data,I2A_simdif_neg.data) > 0).all():        
             loss = loss + torch.max(I2A_simdif, I2A_simdif_neg)
 
     loss = loss / n

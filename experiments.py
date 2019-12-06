@@ -420,7 +420,7 @@ def repeated_attributes(trainer):
         tf = tarfile.open(path_tar)
         tf.extractall(trainer.args.path_repeated_attributes)
         os.remove(path_tar)
-
+    trainer.model.eval()
     num_elements_each = 500
     path_paths = os.path.join(trainer.args.results, 'repeated_attributes', f'paths_{trainer.args.name_dataset}.pkl')
     list_attributes = ['RUBBER', 'METAL', 'CUBE', 'SPHERE', 'CYLINDER', 'LARGE', 'SMALL', 'GRAY', 'RED', 'BLUE',
@@ -507,6 +507,7 @@ def repeated_attributes(trainer):
         path_audio = os.path.join(trainer.args.path_repeated_attributes, 'repetition_audios',
                                   f'{word_attribute}_{"synthetic" if synthetic else "amt"}.wav')
         audio, nframes = trainer.loaders['test'].dataset.load_mel_spectrogram(path='', path_audio=path_audio)
+        audio = audio[:,0:nframes]
         audio = audio.unsqueeze(0).unsqueeze(0).cuda()
         with torch.no_grad():
             audio_feat = trainer.model._modules['module'].model_audio.audio_model(audio)
@@ -522,7 +523,7 @@ def repeated_attributes(trainer):
             matchmap = utils.compute_matchmap(image_output[0], audio_features[word_attribute][0])  # all frames
             matchmap_max_h, _ = matchmap.max(0)
             matchmap_max_hw, _ = matchmap_max_h.max(0)
-            matchmap_max_hw = matchmap_max_hw[4:-4]  # cut beginning and end
+            #matchmap_max_hw = matchmap_max_hw[4:-4]  # cut beginning and end
             value1 = matchmap_max_hw.mean()
             value2, _ = matchmap_max_hw.max(0)
 
