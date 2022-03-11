@@ -3,7 +3,7 @@ librosa==0.6.1
 matplotlib==2.2.2
 numpy==1.15.4
 opencv-python==3.4.1.15
-Pillow==8.1.1
+Pillow==9.0.1
 pydub==0.22.1
 PyYAML==5.4
 scikit-image==0.14.0
